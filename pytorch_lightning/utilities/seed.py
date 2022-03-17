@@ -60,7 +60,17 @@ def seed_everything(seed: Optional[int] = None, workers: bool = False) -> int:
                 seed = _select_seed_randomly(min_seed_value, max_seed_value)
                 rank_zero_warn(f"Invalid seed found: {repr(env_seed)}, seed set to {seed}")
     elif not isinstance(seed, int):
-        seed = int(seed)
+        try:
+            # Try converting the seed to an int
+            seed = int(seed)
+        except ValueError:
+            # Try hashing the seed
+            if hasattr(seed, '__hash__'):
+                seed = hash(seed)
+                if not isinstance(seed, int):
+                    raise ValueError('Seed must have a hashing function that returns an int')
+            else:
+                raise ValueError('Seed must be int, int-compatible or hashable')
 
     if not (min_seed_value <= seed <= max_seed_value):
         rank_zero_warn(f"{seed} is not in bounds, numpy accepts from {min_seed_value} to {max_seed_value}")
